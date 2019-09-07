@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: home-cluster-beacon
+  labels:
+    app: home-cluster-beacon
+spec:
+  selector:
+    matchLabels:
+      app: home-cluster-beacon
+  template:
+    metadata:
+      labels:
+        app: home-cluster-beacon
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              # Only schedule on home-cluster nodes labeled as beacons:
+              - matchExpressions:
+                - key: "home-cluster/beacon"
+                  operator: In
+                  values: ["true"]
+              # [EXAMPLE] only schedule on ARM architecture (no need for labels)
+              # - matchExpressions:
+              #   - key: "beta.kubernetes.io/arch"
+              #     operator: In
+              #     values: ["arm"]
+      hostNetwork: true
+      containers:
+      - name: cluster-beacon
+        image: inzania/cluster-beacon:latest
+        imagePullPolicy: Always
+        env:
+        - name: NODE_RED_DATA_DIR
+          value: /data
+        securityContext:
+          privileged: true # Required for BTLE access.
